@@ -1,5 +1,5 @@
 const Config = require('./config')
-const pveajs = require("pvea")
+const pveajs = require("./pvea")
 const pve = new pveajs(Config.pve.address, Config.pve.user, Config.pve.password)
 
 class UserMg {
@@ -47,7 +47,7 @@ class VmMg {
             return await pve.getNodes()
         })
         var vmidlist = {}
-        console.time('start')
+        //console.time('start')
         let nodelist = []
         for (let key in nodes) {
             if (nodes[key].status == 'online') {
@@ -83,7 +83,7 @@ class VmMg {
         }*/
         console.log(vmidlist)
         if (vmidlist[vmid]) {
-            console.timeEnd('start')
+            //console.timeEnd('start')
             return vmidlist[vmid]
         } else {
             console.log('节点返回false')
@@ -91,7 +91,11 @@ class VmMg {
         }
 
     }
-
+    static async getClusterStatus() {
+        return await pve.run(async () => {
+            return await pve.getClusterResources()
+        })
+    }
     static async getNodeStatus(node) {
         return await pve.run(async () => {
             var nodes = await pve.getNodes()
@@ -145,6 +149,13 @@ class VmMg {
             await pve.resetQemuVm(node,vmid)
         })
         return true
+    }
+    static async getTasks(node,params) {
+        console.log(params)
+        return await pve.run(async () => {
+            if(!node){return false}
+            return await pve.getNodeTasks(node, params)
+        })
     }
 }
 
