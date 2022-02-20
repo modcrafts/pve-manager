@@ -18,7 +18,8 @@ Tables.extend('vpsinfo', {
     id: 'int',
     expdate: 'timestamp',
     price: 'int',
-    customer: 'varchar(500)',
+    owner: 'varchar(500)',
+    helpers: 'varchar(500)',
     refer: 'varchar(500)',
     node: 'string',
   },
@@ -29,8 +30,8 @@ Database.extend('koishi-plugin-mysql', ({ tables }) => {
     id: 'int',
     expdate: 'timestamp',
     price: 'int',
-    customer: 'varchar(500)',
-    refer: 'varchar(500)',
+    owner: 'varchar(500)',
+    helpers: 'varchar(500)',
     node: 'string',
   }
 })
@@ -122,6 +123,10 @@ CPU 使用率: ${(a.cpu*100).toFixed(2)}% (${a.cpus} vCPUs)
         b += `\n${key}    ${stat[nodestatus[key]]}`
       }
       return b
+    })
+  ctx.command('info.cluster', '集群状态')
+    .action(async ({session}) => {
+      return JSON.stringify(await VmMg.getClusterStatus())
     })
 }
 
