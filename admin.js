@@ -1,8 +1,19 @@
 const { Database, User, App } = require('koishi-core')
 const { Time, Logger } = require('koishi-utils')
+const { UserMg, VmMg } = require('./manager')
+
 module.exports.apply = (ctx) => {
     ctx.command('vps/admin', '管理员操作', { authority: 3 })
         .usage('注意：所有管理员操作均对数据库直接操作，将不会验证数据的合规性，请在执行操作前务必确认已输入正确的指令')
+    ctx.command('admin/tasks <node:string>','获取任务信息')
+        .option('errors','-e 仅显示异常任务',{ value:1 })
+        .option('limit','-l <limits:posint> 返回条数(默认 50)')
+        .option('since','-s <since:int> 起始日期')
+        .option('userfilter','-u <user:string> 用户筛选器(默认 bot)',{ fallback: 'bot@pve' })
+        .option('vmid','-v <vmid:posint> VMID筛选器')
+        .action(async ({session,options}, node) => {
+            return JSON.stringify(await VmMg.getTasks(node,options))
+        })
     ctx.command('admin/tuser <user:user> [...acts]','管理VPS用户信息')
         .example('/tuser @用户 vps add owner/helper <VMID> - 为用户添加 VMID 为 owner/helper 的管理权限')
         .example('/tuser @用户 vps del <VMID> - 删除用户对 VMID 的管理权限')
@@ -15,7 +26,7 @@ module.exports.apply = (ctx) => {
                 switch (acts[0]) {
                     case 'vps':
                         let vpslist
-                        if(!userData.vps){
+                        if(!userData?.vps){
                             await session.send("已补充用户数据")
                             vpslist = {"owner":[],"helper":[],"selected":0}
                         } else {vpslist = JSON.parse(userData.vps)}
