@@ -6,8 +6,11 @@ class UserMg {
     static async getSelectedVmid(ctx,user) {
         let userpid = await user.split(":")
         const userData = await ctx.database.getUser(userpid[0], userpid[1])
-        var vpslist = JSON.parse(userData.vps)
-        if (!vpslist.selected) {
+        
+        if (!userData.vpsselected) {
+            /* WIP-自动选择
+            const [vpsbyowner] = await ctx.database.get('vpsinfo', { owner: userpid[1] })
+            const [vpsbyhelper] = await ctx.database.get('vpsinfo', { helpers: new RegExp(`.*${userpid[1]}.*`) })
             if (vpslist.owner.length == 1) {
                 vpslist.selected = vpslist.owner[0]
                 ctx.database.setUser(userpid[0], userpid[1], { vps: JSON.stringify(vpslist) })
@@ -18,20 +21,27 @@ class UserMg {
                 return vpslist.helper[0]
             } else {
                 return false
-            }
+            }*/
+            return false
         } 
-        if (vpslist.owner.includes(vpslist.selected) || vpslist.helper.includes(vpslist.selected)) {
-            return vpslist.selected
+        const _vpsbyowner = JSON.parse(JSON.stringify(await ctx.database.get('vpsinfo', { id: userData.vpsselected, owner: userpid[1] })))
+        const _vpsbyhelper = JSON.parse(JSON.stringify(await ctx.database.get('vpsinfo', { id: userData.vpsselected, helpers: new RegExp(`.*${userpid[1]}.*`) })))
+        if (_vpsbyowner || _vpsbyhelper) {
+            return userData.vpsselected
         }
-        ctx.database.setUser(userpid[0], userpid[1], { vps: null })
+        ctx.database.setUser(userpid[0], userpid[1], { vpsselected: null })
         return 0
 
     }
     static async hasVmid(ctx, user, vmid) {
         let userpid = await user.split(":")
-        const userData = await ctx.database.getUser(userpid[0], userpid[1])
-        var vpslist = JSON.parse(userData.vps)
-        if (vpslist.owner.includes(vmid) || vpslist.helper.includes(vmid)) {
+        const vpsbyowner = JSON.parse(JSON.stringify(await ctx.database.get('vpsinfo', { id: vmid, owner: userpid[1] })))
+        const vpsbyhelper = JSON.parse(JSON.stringify(await ctx.database.get('vpsinfo', { id: vmid, helpers: new RegExp(`.*${userpid[1]}.*`) })))
+        if(!vpsbyowner && !vpsbyhelper){return false}
+            console.log("aaaaaaa")
+          console.log(await ctx.database.get('vpsinfo', { id: vmid, owner: userpid[1] }))
+          //console.log(vpsbyhelper)
+        if (vpsbyowner?.owner == userpid[1] || vpsbyhelper?.[0].helpers.includes(parseInt(userpid[1]))) {
             return true
         } else { return false }
     }
@@ -40,7 +50,7 @@ class UserMg {
 class VmMg {
     static async getNode(vmid) {
         /*
-        let [vpsinfo] = await ctx.database.get('vpsinfo', { 'id': vmid })
+        const [vpsinfo] = await ctx.database.get('vpsinfo', { id: vmid },['node'])
             //await session.send(JSON.stringify(vpsinfo))
         if(vpsinfo.node){return vpsinfo.node}*/
         var nodes = await pve.run(async () => {
@@ -82,8 +92,10 @@ class VmMg {
             console.timeEnd(keys)
         }*/
         console.log(vmidlist)
+        console.log(vmidlist[vmid])
         if (vmidlist[vmid]) {
             //console.timeEnd('start')
+            //ctx.database.update('vpsinfo', { id: vmid ,node: vmidlist[vmid]})
             return vmidlist[vmid]
         } else {
             console.log('节点返回false')

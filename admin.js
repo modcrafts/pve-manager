@@ -14,28 +14,30 @@ module.exports.apply = (ctx) => {
         .action(async ({session,options}, node) => {
             return JSON.stringify(await VmMg.getTasks(node,options))
         })
-    ctx.command('admin/tuser <user:user> [...acts]','管理VPS用户信息')
-        .example('/tuser @用户 vps add owner/helper <VMID> - 为用户添加 VMID 为 owner/helper 的管理权限')
+    /*ctx.command('admin/tuser <user:user> [...acts]','管理VPS用户信息')
+        .example('/tuser @用户 vps add owner/helper <VMID> - 为用户设置/添加 VMID 为 owner/helper 的管理权限')
         .example('/tuser @用户 vps del <VMID> - 删除用户对 VMID 的管理权限')
         .action(async ({session}, user, ...acts) => {
             if (typeof user == "undefined") {
                 return "请指定操作用户。"
             } else {
-                userpid = user.split(":")
-                let userData = await ctx.database.getUser(userpid[0], userpid[1])
+                let userid = user.split(":")?.[1]
+                //let userData = await ctx.database.getUser(userpid[0], userpid[1])
+                /*let vpsinfo = await ctx.database.get('vpsinfo', {
+                    owner: userid,
+                    $or: [{ $helpers: new RegExp(`.*${userid}.*`) }],
+                  })*\/
+                let vpsinfo = await ctx.database.get('vpsinfo', { id: vmid })
                 switch (acts[0]) {
                     case 'vps':
-                        let vpslist
-                        if(!userData?.vps){
-                            await session.send("已补充用户数据")
-                            vpslist = {"owner":[],"helper":[],"selected":0}
-                        } else {vpslist = JSON.parse(userData.vps)}
+                        
                         switch (acts[1]) {
                             case 'add':
+                                await ctx.database.update('vpsinfo', [vpsinfo])
                                 vpslist[acts[2]].push(Number(acts[3]))
                                 let vps = JSON.stringify(vpslist)
                                 await ctx.database.setUser(userpid[0], userpid[1], { vps })
-                                return "已为该用户添加 "+acts[3]+" 为 "+acts[2]
+                                return "已将该用户设置为 "+acts[3]+" 的 "+acts[2]
                             case 'del':
                                 let idown = vpslist.owner.indexOf(Number(acts[2]))
                                 let idhelp = vpslist.helper.indexOf(Number(acts[2]))
@@ -55,24 +57,27 @@ module.exports.apply = (ctx) => {
                 
                 
             }
-        })
+        })*/
     ctx.command('admin/vmid','管理VPS信息')
     ctx.command('vmid.set <vmid:posint>','设置VPS信息')
         //.option('expdate','-d <expdate:text> 设置到期时间或续期时长')
         .option('price','-p <price:number> 设置VPS价格')
-        .option('customer','-u <user:user> 设置购买者')
+        .option('owner','-u <user:user> 设置拥有者')
+        //.option('helpers','-h <user:user> 添加协作者')
         .option('refer','-r <user:user> 设置推荐人')
+        .option('node','-n <node:string> 设置所属节点')
         .action(async ({session, options}, vmid) => {
             if (typeof vmid == "undefined") {return "请指定VMID。"}
             let [vpsinfo] = await ctx.database.get('vpsinfo', { 'id': vmid })
             //await session.send(JSON.stringify(vpsinfo))
-            vpsinfo || (vpsinfo = {'id':vmid, 'expdate':Time.parseDate(Date.now()+2678400000), 'price':0, 'customer':null, 'refer':null})
-            if(options.expdate){vpsinfo.expdate=options.expdate}
-            if(options.price){vpsinfo.price=options.price}
-            if(options.customer){vpsinfo.customer=options.customer}
-            if(options.refer){vpsinfo.refer=options.refer}
+            vpsinfo || (vpsinfo = { 'id':vmid, 'expdate':Time.parseDate(Date.now()+2678400000), 'price':0, 'owner':null, 'helpers': [], 'refer':null, 'node':null })
+            if(options.expdate){vpsinfo.expdate = options.expdate}
+            if(options.price){vpsinfo.price = options.price}
+            if(options.owner){vpsinfo.owner = options.owner.split(':')[1]}
+            if(options.refer){vpsinfo.refer = options.refer}
+            if(options.node){vpsinfo.node = options.node}
             //await session.send(JSON.stringify(rows))
-            let id = vmid
+            //let id = vmid
             await ctx.database.update('vpsinfo', [vpsinfo])
             return "操作已进行"
         })

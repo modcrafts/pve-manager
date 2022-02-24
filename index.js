@@ -19,19 +19,20 @@ Tables.extend('vpsinfo', {
     expdate: 'timestamp',
     price: 'int',
     owner: 'varchar(500)',
-    helpers: 'varchar(500)',
+    helpers: 'json',
     refer: 'varchar(500)',
     node: 'string',
   },
 })
 Database.extend('koishi-plugin-mysql', ({ tables }) => {
   tables.user.vps = 'json'
+  tables.user.vpsselected = 'int'
   tables.vpsinfo = {
     id: 'int',
     expdate: 'timestamp',
     price: 'int',
     owner: 'varchar(500)',
-    helpers: 'varchar(500)',
+    helpers: 'json',
     node: 'string',
   }
 })
@@ -45,28 +46,34 @@ module.exports.apply = (ctx) => {
     .option('select', '-s <vmid:posint> 选择默认操作的机器')
     .example('/server -s 100 选择 VMID 为 100 的机器作为默认机器')
     .action(async ({ options, session }) => {
-      await session.observeUser(['id', 'vps'])
-      if(session.user.vps == null){
+      await session.observeUser(['id', 'vpsselected'])
+      let userpid = await session.user.onebot.split(":")
+        const vpsbyowner = JSON.parse(JSON.stringify(await ctx.database.get('vpsinfo', { owner: userpid[1] })))
+        const vpsbyhelper = JSON.parse(JSON.stringify(await ctx.database.get('vpsinfo', { helpers: new RegExp(`.*${userpid[1]}.*`) })))
+      console.log(vpsbyowner)
+      if(!vpsbyowner && !vpsbyhelper){
         return "您未在 Tcloud 购买 VPS 或未登记"
       }
-      let vpslist = JSON.parse(session.user.vps)
       if (typeof options.select == 'undefined')
       {
         //const rows = await ctx.database.get('schedule', { id: session.user.id })
         let text = "您拥有的机器:"
-        for(let key in vpslist.owner){
-          text += "\n -  "+vpslist.owner[key]
-          if(vpslist.owner[key] == vpslist.selected){text+=" (已选择)"}
+        console.log()
+        for(let key in vpsbyowner){
+          
+          text += "\n -  " + vpsbyowner[key].id
+          if(vpsbyowner[key].id == session.user.vpsselected){text+=" (已选择)"}
         }
-        for(let key in vpslist.helper){
-          text += "\n -  "+vpslist.helper[key]+" (协作者)"
-          if(vpslist.helper[key] == vpslist.selected){text+=" (已选择)"}
+        for(let key in vpsbyhelper){
+          text += "\n -  "+ vpsbyhelper[key].id +" (协作者)"
+          if(vpsbyhelper[key].id == session.user.vpsselected){text+=" (已选择)"}
         }
         if(text == "您拥有的机器:"){return "您未在 Tcloud 购买 VPS 或未登记"}else{return text}
       } else {
-        if(vpslist.owner.includes(options.select) || vpslist.helper.includes(options.select)){
-          vpslist.selected = options.select
-          session.user.vps = JSON.stringify(vpslist)
+        const _vpsbyowner = JSON.parse(JSON.stringify(await ctx.database.get('vpsinfo', { id: options.select, owner: userpid[1] })))
+        const _vpsbyhelper = JSON.parse(JSON.stringify(await ctx.database.get('vpsinfo', { id: options.select, helpers: new RegExp(`.*${userpid[1]}.*`) })))
+        if(_vpsbyowner || _vpsbyhelper){
+          session.user.vpsselected = options.select
           return "已选择 "+options.select+" 作为默认操作机器"
         }else {
           return "此机器ID不属于您"
@@ -79,8 +86,8 @@ module.exports.apply = (ctx) => {
     .action(async ({session, options}, vmid) => {
    //return JSON.stringify(options)
       if(!vmid){
-        await session.observeUser(['id', 'vps'])
-        if(session.user.vps == null && !options.force){
+        await session.observeUser(['id', 'vpsselected'])
+        if(session.user.vpsselected == null && !options.force){
           return "您未在 Tcloud 购买 VPS 或未登记"
         }else if(options.force === true){
           return '请指定 vmid'
