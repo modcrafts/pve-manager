@@ -69,8 +69,9 @@ module.exports.apply = (ctx) => {
         }
         if(text == "您拥有的机器:"){return "您未在 Tcloud 购买 VPS 或未登记"}else{return text}
       } else {
-        const _vpsbyowner = JSON.parse(JSON.stringify(await ctx.database.get('vpsinfo', { id: options.select, owner: session.user.onebot })))
-        const _vpsbyhelper = JSON.parse(JSON.stringify(await ctx.database.get('vpsinfo', { id: options.select, helpers: new RegExp(`.*${session.user.onebot}.*`) })))
+        const [_vpsbyowner] = JSON.parse(JSON.stringify(await ctx.database.get('vpsinfo', { id: options.select, owner: session.user.onebot })))
+        const [_vpsbyhelper] = JSON.parse(JSON.stringify(await ctx.database.get('vpsinfo', { id: options.select, helpers: new RegExp(`.*${session.user.onebot}.*`) })))
+        console.log(_vpsbyowner)
         if(_vpsbyowner || _vpsbyhelper){
           session.user.vpsselected = options.select
           return "已选择 "+options.select+" 作为默认操作机器"

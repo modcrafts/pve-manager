@@ -24,8 +24,8 @@ class UserMg {
             }*/
             return false
         } 
-        const _vpsbyowner = JSON.parse(JSON.stringify(await ctx.database.get('vpsinfo', { id: userData.vpsselected, owner: userpid[1] })))
-        const _vpsbyhelper = JSON.parse(JSON.stringify(await ctx.database.get('vpsinfo', { id: userData.vpsselected, helpers: new RegExp(`.*${userpid[1]}.*`) })))
+        const [_vpsbyowner] = JSON.parse(JSON.stringify(await ctx.database.get('vpsinfo', { id: userData.vpsselected, owner: userpid[1] })))
+        const [_vpsbyhelper] = JSON.parse(JSON.stringify(await ctx.database.get('vpsinfo', { id: userData.vpsselected, helpers: new RegExp(`.*${userpid[1]}.*`) })))
         if (_vpsbyowner || _vpsbyhelper) {
             return userData.vpsselected
         }
@@ -35,13 +35,12 @@ class UserMg {
     }
     static async hasVmid(ctx, user, vmid) {
         let userpid = await user.split(":")
-        const vpsbyowner = JSON.parse(JSON.stringify(await ctx.database.get('vpsinfo', { id: vmid, owner: userpid[1] })))
-        const vpsbyhelper = JSON.parse(JSON.stringify(await ctx.database.get('vpsinfo', { id: vmid, helpers: new RegExp(`.*${userpid[1]}.*`) })))
+        const [vpsbyowner] = JSON.parse(JSON.stringify(await ctx.database.get('vpsinfo', { id: vmid, owner: userpid[1] })))
+        const [vpsbyhelper] = JSON.parse(JSON.stringify(await ctx.database.get('vpsinfo', { id: vmid, helpers: new RegExp(`.*${userpid[1]}.*`) })))
         if(!vpsbyowner && !vpsbyhelper){return false}
-            console.log("aaaaaaa")
-          console.log(await ctx.database.get('vpsinfo', { id: vmid, owner: userpid[1] }))
+          //console.log(await ctx.database.get('vpsinfo', { id: vmid, owner: userpid[1] }))
           //console.log(vpsbyhelper)
-        if (vpsbyowner?.owner == userpid[1] || vpsbyhelper?.[0].helpers.includes(parseInt(userpid[1]))) {
+        if (vpsbyowner?.owner == userpid[1] || vpsbyhelper?.helpers?.includes(parseInt(userpid[1]))) {
             return true
         } else { return false }
     }
