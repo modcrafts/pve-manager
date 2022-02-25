@@ -47,10 +47,9 @@ module.exports.apply = (ctx) => {
     .example('/server -s 100 选择 VMID 为 100 的机器作为默认机器')
     .action(async ({ options, session }) => {
       await session.observeUser(['id', 'vpsselected'])
-      let userpid = await session.user.onebot.split(":")
-        const vpsbyowner = JSON.parse(JSON.stringify(await ctx.database.get('vpsinfo', { owner: userpid[1] })))
-        const vpsbyhelper = JSON.parse(JSON.stringify(await ctx.database.get('vpsinfo', { helpers: new RegExp(`.*${userpid[1]}.*`) })))
-      console.log(vpsbyowner)
+        const vpsbyowner = JSON.parse(JSON.stringify(await ctx.database.get('vpsinfo', { owner: session.user.onebot })))
+        const vpsbyhelper = JSON.parse(JSON.stringify(await ctx.database.get('vpsinfo', { helpers: new RegExp(`.*${session.user.onebot}.*`) })))
+      //console.log(session.user.onebot)
       if(!vpsbyowner && !vpsbyhelper){
         return "您未在 Tcloud 购买 VPS 或未登记"
       }
@@ -58,7 +57,7 @@ module.exports.apply = (ctx) => {
       {
         //const rows = await ctx.database.get('schedule', { id: session.user.id })
         let text = "您拥有的机器:"
-        console.log()
+        console.log(vpsbyowner)
         for(let key in vpsbyowner){
           
           text += "\n -  " + vpsbyowner[key].id
@@ -70,8 +69,8 @@ module.exports.apply = (ctx) => {
         }
         if(text == "您拥有的机器:"){return "您未在 Tcloud 购买 VPS 或未登记"}else{return text}
       } else {
-        const _vpsbyowner = JSON.parse(JSON.stringify(await ctx.database.get('vpsinfo', { id: options.select, owner: userpid[1] })))
-        const _vpsbyhelper = JSON.parse(JSON.stringify(await ctx.database.get('vpsinfo', { id: options.select, helpers: new RegExp(`.*${userpid[1]}.*`) })))
+        const _vpsbyowner = JSON.parse(JSON.stringify(await ctx.database.get('vpsinfo', { id: options.select, owner: session.user.onebot })))
+        const _vpsbyhelper = JSON.parse(JSON.stringify(await ctx.database.get('vpsinfo', { id: options.select, helpers: new RegExp(`.*${session.user.onebot}.*`) })))
         if(_vpsbyowner || _vpsbyhelper){
           session.user.vpsselected = options.select
           return "已选择 "+options.select+" 作为默认操作机器"
@@ -109,9 +108,12 @@ module.exports.apply = (ctx) => {
       }
       let node = await VmMg.getNode(vmid)
       if(!node){return `机器: ${vmid} (节点离线)`}
+      let [vpsinfo] = await ctx.database.get('vpsinfo', { 'id': vmid })
+            const vpstime = vpsinfo.expdate.valueOf()
       let b = `机器: ${vmid} (${node})
 ==========
 状态: ${stu[a.status]}
+到期时间: ${Time.parseDate(vpstime)}
 运行时间: ${Time.formatTime(Number(String(a.uptime)+'000')) || '节点离线'}
 CPU 使用率: ${(a.cpu*100).toFixed(2)}% (${a.cpus} vCPUs)
 最大内存: ${a.maxmem/1073741824 || 0} GB`
