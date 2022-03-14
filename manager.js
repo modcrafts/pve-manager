@@ -15,10 +15,10 @@ class UserMg {
             const vpsbyhelper = await ctx.database.get('vpsinfo', { helpers: new RegExp(`.*${userpid[1]}.*`) })
             
             if (vpsbyowner.length == 1) {
-                ctx.database.setUser(userpid[0], userpid[1], { vpsselected: vpsbyowner[0].id })
+                await ctx.database.setUser(userpid[0], userpid[1], { vpsselected: vpsbyowner[0].id })
                 return vpsbyowner[0].id
             } else if (vpsbyhelper.length == 1) {
-                ctx.database.setUser(userpid[0], userpid[1], { vpsselected: vpsbyhelper[0].id })
+                await ctx.database.setUser(userpid[0], userpid[1], { vpsselected: vpsbyhelper[0].id })
                 return vpsbyhelper[0].id
             } else {
                 return false
@@ -33,7 +33,7 @@ class UserMg {
             return userData.vpsselected
         }
         //console.log('A5')
-        ctx.database.setUser(userpid[0], userpid[1], { vpsselected: null })
+        await ctx.database.setUser(userpid[0], userpid[1], { vpsselected: null })
         return 0
 
     }

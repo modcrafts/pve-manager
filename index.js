@@ -28,7 +28,6 @@ Tables.extend('vpsinfo', {
   },
 })
 Database.extend('koishi-plugin-mysql', ({ tables }) => {
-  tables.user.vps = 'json'
   tables.user.vpsselected = 'int'
   tables.vpsinfo = {
     id: 'int',
@@ -60,7 +59,7 @@ module.exports.apply = (ctx) => {
       {
         //const rows = await ctx.database.get('schedule', { id: session.user.id })
         let text = "您拥有的机器:"
-        console.log(vpsbyowner)
+        //console.log(vpsbyowner)
         for(let key in vpsbyowner){
           
           text += "\n -  " + vpsbyowner[key].id
@@ -76,7 +75,7 @@ module.exports.apply = (ctx) => {
         const [_vpsbyhelper] = JSON.parse(JSON.stringify(await ctx.database.get('vpsinfo', { id: options.select, helpers: new RegExp(`.*${session.user.onebot}.*`) })))
         //console.log(_vpsbyowner)
         if(_vpsbyowner || _vpsbyhelper){
-          ctx.database.setUser('onebot', session.userId, { vpsselected: options.select })
+          await ctx.database.setUser('onebot', session.userId, { vpsselected: options.select })
           return "已选择 "+options.select+" 作为默认操作机器"
         }else {
           return "此机器ID不属于您"
