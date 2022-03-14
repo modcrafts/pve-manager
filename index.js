@@ -115,8 +115,8 @@ module.exports.apply = (ctx) => {
             const vpstime = vpsinfo.expdate.valueOf()
       let b = `机器: ${vmid} (${node})
 ==========
-状态: ${stu[a.status]}
-到期时间: ${dayjs(vpstime).format('YYYY-MM-DD')}
+状态: ${stu[a.status]}\
+${dayjs(vpstime).isAfter(dayjs().add(5, 'year')) ? "" : "\n到期时间: " + dayjs(vpstime).format('YYYY-MM-DD')}
 运行时间: ${Time.formatTime(Number(String(a.uptime)+'000')) || '节点离线'}
 CPU 使用率: ${(a.cpu*100).toFixed(2)}% (${a.cpus} vCPUs)
 最大内存: ${a.maxmem/1073741824 || 0} GB`
