@@ -9,17 +9,16 @@ module.exports.apply = (ctx) => {
         .action(async ({ options, session }, action) => {
             let vmid = options.vmid
             if(!vmid){
-                await session.observeUser(['id', 'vps'])
-                if(session.user.vps == null && !options.force){
+                await session.observeUser(['id', 'vpsselected'])
+                vmid = await UserMg.getSelectedVmid(ctx, session.platform + ':' + session.userId)
+                if(vmid === 0 && !options.force){
                   return "您未在 Tcloud 购买 VPS 或未登记"
+                }else if(vmid === false && !options.force){
+                  return "您有多个机器，请选择默认机器"
                 }else if(options.force === true){
                   return '请指定 vmid'
-                }else {
-                vmid = await UserMg.getSelectedVmid(ctx, session.platform + ':' + session.userId)
                 }
               }
-              if(vmid === 0){return "您未在 Tcloud 购买 VPS 或未登记"}
-              if(!vmid){return "您有多个机器，请选择默认机器"}
               //return String(!UserMg.hasVmid(ctx, session.platform + ':' + session.userId, vmid))
               if(!options.force && !await UserMg.hasVmid(ctx, session.platform + ':' + session.userId, vmid)){
                  return "此机器 ID 不属于您"

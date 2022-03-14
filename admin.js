@@ -1,6 +1,9 @@
 const { Database, User, App } = require('koishi-core')
 const { Time, Logger } = require('koishi-utils')
 const { UserMg, VmMg } = require('./manager')
+var dayjs = require('dayjs')
+var customParseFormat = require('dayjs/plugin/customParseFormat')
+dayjs.extend(customParseFormat)
 
 module.exports.apply = (ctx) => {
     ctx.command('vps/admin', '管理员操作', { authority: 3 })
@@ -87,6 +90,7 @@ module.exports.apply = (ctx) => {
         .action(async ({session}, vmid, ...dateSegments) => {
             if (!vmid) return "请指定VMID。"
             let [vpsinfo] = await ctx.database.get('vpsinfo', { 'id': vmid })
+            if (!vpsinfo?.id) return "机器不存在。"
             const vpstime = vpsinfo.expdate.valueOf()
             const dateString = dateSegments.join('-')
             const time = (Time.parseTime(dateString)) || (Time.parseDate(dateString))
@@ -98,7 +102,7 @@ module.exports.apply = (ctx) => {
                 timestamp = +time
             }
 
-            if (Number.isNaN(timestamp) || timestamp > 2147483647000) {
+            if (Number.isNaN(timestamp) /*|| timestamp > 2147483647000*/) {
               if (/^\d+$/.test(dateString)) {
                 return `请输入合法的日期。你要输入的是不是 ${dateString}d？`
               } else {
@@ -111,7 +115,7 @@ module.exports.apply = (ctx) => {
             }
 
             await ctx.database.update('vpsinfo',[{id: vmid, expdate: Time.parseDate(timestamp)}])
-            return '已将 VPS '+vmid+' 延期至 '+ Time.parseDate(timestamp)
+            return '已将 VPS '+vmid+' 延期至 '+ dayjs(timestamp).format('YYYY-MM-DD')
         })
 
 }

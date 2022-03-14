@@ -3,6 +3,9 @@ module.exports.name = 'tcloud'
 const { Database, User, Tables } = require('koishi-core')
 const { UserMg, VmMg } = require('./manager')
 const { Time, Logger } = require('koishi-utils')
+var dayjs = require('dayjs')
+var customParseFormat = require('dayjs/plugin/customParseFormat')
+dayjs.extend(customParseFormat)
 
 const VPSoperate = require('./operate')
 const VPSadmin = require('./admin')
@@ -16,7 +19,7 @@ Tables.extend('vpsinfo', {
   unique: [],
   fields: {
     id: 'int',
-    expdate: 'timestamp',
+    expdate: 'datetime',
     price: 'int',
     owner: 'varchar(500)',
     helpers: 'json',
@@ -29,7 +32,7 @@ Database.extend('koishi-plugin-mysql', ({ tables }) => {
   tables.user.vpsselected = 'int'
   tables.vpsinfo = {
     id: 'int',
-    expdate: 'timestamp',
+    expdate: 'datetime',
     price: 'int',
     owner: 'varchar(500)',
     helpers: 'json',
@@ -71,9 +74,9 @@ module.exports.apply = (ctx) => {
       } else {
         const [_vpsbyowner] = JSON.parse(JSON.stringify(await ctx.database.get('vpsinfo', { id: options.select, owner: session.user.onebot })))
         const [_vpsbyhelper] = JSON.parse(JSON.stringify(await ctx.database.get('vpsinfo', { id: options.select, helpers: new RegExp(`.*${session.user.onebot}.*`) })))
-        console.log(_vpsbyowner)
+        //console.log(_vpsbyowner)
         if(_vpsbyowner || _vpsbyhelper){
-          session.user.vpsselected = options.select
+          ctx.database.setUser('onebot', session.userId, { vpsselected: options.select })
           return "已选择 "+options.select+" 作为默认操作机器"
         }else {
           return "此机器ID不属于您"
@@ -81,22 +84,21 @@ module.exports.apply = (ctx) => {
       }
     })
   ctx.command('vps/info', '机器信息')
-  ctx.command('info.state [vmid:posint]', '机器状态', { minInterval: Time.minute/3 })
+  ctx.command('info.state [vmid:posint]', '机器状态', { minInterval: Time.minute/60 })
     .option('force', '-f 强制执行', { authority: 2 })
     .action(async ({session, options}, vmid) => {
    //return JSON.stringify(options)
       if(!vmid){
         await session.observeUser(['id', 'vpsselected'])
-        if(session.user.vpsselected == null && !options.force){
+        vmid = await UserMg.getSelectedVmid(ctx, session.platform + ':' + session.userId)
+        if(vmid === 0 && !options.force){
           return "您未在 Tcloud 购买 VPS 或未登记"
+        }else if(vmid === false && !options.force){
+          return "您有多个机器，请选择默认机器"
         }else if(options.force === true){
           return '请指定 vmid'
-        }else {
-        vmid = await UserMg.getSelectedVmid(ctx, session.platform + ':' + session.userId)
         }
       }
-      if(vmid === 0){return "您未在 Tcloud 购买 VPS 或未登记"}
-      if(!vmid){return "您有多个机器，请选择默认机器"}
       //return String(!UserMg.hasVmid(ctx, session.platform + ':' + session.userId, vmid))
       if(!options.force && !await UserMg.hasVmid(ctx, session.platform + ':' + session.userId, vmid)){
          return "此机器 ID 不属于您"
@@ -110,11 +112,12 @@ module.exports.apply = (ctx) => {
       let node = await VmMg.getNode(vmid)
       if(!node){return `机器: ${vmid} (节点离线)`}
       let [vpsinfo] = await ctx.database.get('vpsinfo', { 'id': vmid })
+      if(!vpsinfo?.id) return "机器不存在。"
             const vpstime = vpsinfo.expdate.valueOf()
       let b = `机器: ${vmid} (${node})
 ==========
 状态: ${stu[a.status]}
-到期时间: ${Time.parseDate(vpstime)}
+到期时间: ${dayjs(vpstime).format('YYYY-MM-DD')}
 运行时间: ${Time.formatTime(Number(String(a.uptime)+'000')) || '节点离线'}
 CPU 使用率: ${(a.cpu*100).toFixed(2)}% (${a.cpus} vCPUs)
 最大内存: ${a.maxmem/1073741824 || 0} GB`
