@@ -89,8 +89,12 @@ class pvea {
 
   async authCheck() {
     const currentTime = new Date().getTime()
-    if (currentTime - this.tokenTimeStamp > 60 * 60 * 1000) {
-      this.run()
+    console.log("验证:"+this.authenticated)
+    console.log("过期:" + ((currentTime - this.tokenTimeStamp) > 7200 * 1000))
+    
+    if (!this.authenticated || currentTime - this.tokenTimeStamp > 7200 * 1000) {
+      this.authenticated = false
+      await this.run()
     }
   }
 
