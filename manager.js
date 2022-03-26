@@ -20,7 +20,7 @@ class UserMg {
             } else if (vpsbyhelper.length == 1) {
                 await ctx.database.setUser(userpid[0], userpid[1], { vpsselected: vpsbyhelper[0].id })
                 return vpsbyhelper[0].id
-            } else {
+            } else if (vpsbyowner.length > 1 || vpsbyhelper.length > 1) {
                 return false
             }
         } 
@@ -51,14 +51,24 @@ class UserMg {
     
 }
 class VmMg {
+    static async request(method, url, data) { // method: 0:GET 1:POST 2:PUT
+        switch(method) {
+            case 0:
+                return await pve.get(url, data)
+            case 1:
+                return await pve.post(url, data)
+            case 2:
+                return await pve.put(url, data)
+            default:
+                return false
+        }
+    }
     static async getNode(vmid) {
         /*
         const [vpsinfo] = await ctx.database.get('vpsinfo', { id: vmid },['node'])
             //await session.send(JSON.stringify(vpsinfo))
         if(vpsinfo.node){return vpsinfo.node}*/
-        var nodes = await pve.run(async () => {
-            return await pve.getNodes()
-        })
+        var nodes = await pve.getNodes()
         var vmidlist = {}
         //console.time('start')
         let nodelist = []
@@ -70,9 +80,7 @@ class VmMg {
         const anode = await Promise.resolve(nodelist)
         const promises = []
         async function getvm(node){
-            let a = await pve.run(async () => {
-                return await pve.listQemuVms(node)
-            })
+            let a = await pve.listQemuVms(node)
             for (let key in a){
                 vmidlist[Number(a[key].vmid)] = node
             }
@@ -107,70 +115,51 @@ class VmMg {
 
     }
     static async getClusterStatus() {
-        return await pve.run(async () => {
-            return await pve.getClusterResources()
-        })
+        return await pve.getClusterResources()
     }
     static async getNodeStatus(node) {
-        return await pve.run(async () => {
-            var nodes = await pve.getNodes()
-            var nodesat = {}
-            for (let key in nodes) {
-                nodesat[nodes[key].node] = nodes[key].status
-            }
-            if(!node){return nodesat}else{return nodesat[node]}
-        })
+        var nodes = await pve.getNodes()
+        var nodesat = {}
+        for (let key in nodes) {
+            nodesat[nodes[key].node] = nodes[key].status
+        }
+        if(!node){return nodesat}else{return nodesat[node]}
     }
 
     static async getVmState(vmid) {
-        return await pve.run(async () => {
-            var node = await this.getNode(vmid)
-            if(!node){return false}
-            return await pve.getCurrentQemuVmState(node,vmid)
-        })
+        var node = await this.getNode(vmid)
+        if(!node){return false}
+        return await pve.getCurrentQemuVmState(node,vmid)
     }
 
     static async stopVm(vmid) {
-        await pve.run(async () => {
-            var node = await this.getNode(vmid)
-            await pve.stopQemuVm(node,vmid)
-        })
+        var node = await this.getNode(vmid)
+        await pve.stopQemuVm(node,vmid)
         return true
     }
     static async startVm(vmid) {
-        await pve.run(async () => {
-            var node = await this.getNode(vmid)
-            await pve.startQemuVm(node,vmid)
-        })
+        var node = await this.getNode(vmid)
+        await pve.startQemuVm(node,vmid)
         return true
     }
     static async shutdownVm(vmid) {
-        await pve.run(async () => {
-            var node = await this.getNode(vmid)
-            await pve.shutdownQemuVm(node,vmid)
-        })
+        var node = await this.getNode(vmid)
+        await pve.shutdownQemuVm(node,vmid)
         return true
     }
     static async rebootVm(vmid) {
-        await pve.run(async () => {
-            var node = await this.getNode(vmid)
-            await pve.rebootQemuVm(node,vmid)
-        })
+        var node = await this.getNode(vmid)
+        await pve.rebootQemuVm(node,vmid)
         return true
     }
     static async resetVm(vmid) {
-        await pve.run(async () => {
-            var node = await this.getNode(vmid)
-            await pve.resetQemuVm(node,vmid)
-        })
+        var node = await this.getNode(vmid)
+        await pve.resetQemuVm(node,vmid)
         return true
     }
     static async getTasks(node,params) {
-        console.log(params)
-        return await pve.run(async () => {
-            if(!node){return false}
-            return await pve.getNodeTasks(node, params)
-        })
+        if(!node){return false}
+        return await pve.getNodeTasks(node, params)
     }
 }
 
