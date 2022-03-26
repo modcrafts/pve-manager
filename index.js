@@ -120,7 +120,12 @@ ${dayjs(vpstime).isAfter(dayjs().add(5, 'year')) ? "" : "\n到期时间: " + day
 运行时间: ${Time.formatTime(Number(String(a.uptime)+'000')) || '节点离线'}
 CPU 使用率: ${(a.cpu*100).toFixed(2)}% (${a.cpus} vCPUs)
 最大内存: ${a.maxmem/1073741824 || 0} GB`
-      return b
+    try {
+    session.send(b)
+    } catch(err) {
+      return '消息发送失败,账号可能被风控。'
+    }
+    return
     })
   ctx.command('info.node', '节点状态', { minInterval: Time.minute/3 })
     .action(async ({session}) => {
