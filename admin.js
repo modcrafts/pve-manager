@@ -1,11 +1,12 @@
 const { Database, User, App } = require('koishi-core')
 const { Time, Logger } = require('koishi-utils')
-const { UserMg, VmMg } = require('./manager')
+const { UserMg, _VmMg } = require('./manager')
 var dayjs = require('dayjs')
 var customParseFormat = require('dayjs/plugin/customParseFormat')
 dayjs.extend(customParseFormat)
 
 module.exports.apply = (ctx) => {
+    const VmMg = new _VmMg(ctx)
     ctx.command('vps/admin', '管理员操作', { authority: 3 })
         .usage('注意：所有管理员操作均对数据库直接操作，将不会验证数据的合规性，请在执行操作前务必确认已输入正确的指令')
     ctx.command('admin/tasks <node:string>','获取任务信息')
@@ -117,5 +118,17 @@ module.exports.apply = (ctx) => {
             await ctx.database.update('vpsinfo',[{id: vmid, expdate: Time.parseDate(timestamp)}])
             return '已将 VPS '+vmid+' 延期至 '+ dayjs(timestamp).format('YYYY-MM-DD')
         })
-
+        ctx.command('admin/pve','PVE 操作', { authority: 5 })
+        ctx.command('pve.request <method:string> <Url:string> <Data:text>','发送 GET/POST/PUT 请求')
+        .action(async ({ session, options }, method, Url, Data) => {
+            const methods = {
+                "GET": 0,
+                "POST": 1,
+                "PUT": 2
+            }
+            method = methods?.[method.toUpperCase()]
+            let ret = await _VmMg.request(method, Url, {})
+            console.log(ret)
+            return JSON.stringify(ret)
+        })
 }

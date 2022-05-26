@@ -1,4 +1,5 @@
 const Config = require('./config')
+const { Context } = require('koishi-core')
 const pveajs = require("./pvea")
 const pve = new pveajs(Config.pve.address, Config.pve.user, Config.pve.password)
 
@@ -50,7 +51,11 @@ class UserMg {
     }
     
 }
-class VmMg {
+class _VmMg {
+    constructor(ctx) {
+        this.ctx = ctx
+    }
+
     static async request(method, url, data) { // method: 0:GET 1:POST 2:PUT
         switch(method) {
             case 0:
@@ -63,11 +68,11 @@ class VmMg {
                 return false
         }
     }
-    static async getNode(vmid) {
-        /*
-        const [vpsinfo] = await ctx.database.get('vpsinfo', { id: vmid },['node'])
+    async getNode(vmid) {
+        const [vpsinfo] = await this.ctx.database.get('vpsinfo', { id: vmid },['node'])
             //await session.send(JSON.stringify(vpsinfo))
-        if(vpsinfo.node){return vpsinfo.node}*/
+            console.log(vpsinfo)
+        if(vpsinfo.node){return vpsinfo.node}
         var nodes = await pve.getNodes()
         var vmidlist = {}
         //console.time('start')
@@ -104,9 +109,13 @@ class VmMg {
         }*/
         //console.log(vmidlist)
         //console.log(vmidlist[vmid])
+        
+        for (let [key, name] of Object.entries(vmidlist)) {
+            console.log(key, name)
+            await this.ctx.database.update('vpsinfo', [{ id: parseInt(key) ,node: name}])
+        }
         if (vmidlist[vmid]) {
             //console.timeEnd('start')
-            //ctx.database.update('vpsinfo', { id: vmid ,node: vmidlist[vmid]})
             return vmidlist[vmid]
         } else {
             //console.log('节点返回false')
@@ -114,10 +123,10 @@ class VmMg {
         }
 
     }
-    static async getClusterStatus() {
+    async getClusterStatus() {
         return await pve.getClusterResources()
     }
-    static async getNodeStatus(node) {
+    async getNodeStatus(node) {
         var nodes = await pve.getNodes()
         var nodesat = {}
         for (let key in nodes) {
@@ -126,41 +135,41 @@ class VmMg {
         if(!node){return nodesat}else{return nodesat[node]}
     }
 
-    static async getVmState(vmid) {
+    async getVmState(vmid) {
         var node = await this.getNode(vmid)
         if(!node){return false}
         return await pve.getCurrentQemuVmState(node,vmid)
     }
 
-    static async stopVm(vmid) {
+    async stopVm(vmid) {
         var node = await this.getNode(vmid)
         await pve.stopQemuVm(node,vmid)
         return true
     }
-    static async startVm(vmid) {
+    async startVm(vmid) {
         var node = await this.getNode(vmid)
         await pve.startQemuVm(node,vmid)
         return true
     }
-    static async shutdownVm(vmid) {
+    async shutdownVm(vmid) {
         var node = await this.getNode(vmid)
         await pve.shutdownQemuVm(node,vmid)
         return true
     }
-    static async rebootVm(vmid) {
+    async rebootVm(vmid) {
         var node = await this.getNode(vmid)
         await pve.rebootQemuVm(node,vmid)
         return true
     }
-    static async resetVm(vmid) {
+    async resetVm(vmid) {
         var node = await this.getNode(vmid)
         await pve.resetQemuVm(node,vmid)
         return true
     }
-    static async getTasks(node,params) {
+    async getTasks(node,params) {
         if(!node){return false}
         return await pve.getNodeTasks(node, params)
     }
 }
 
-module.exports = { UserMg, VmMg }
+module.exports = { UserMg, _VmMg }

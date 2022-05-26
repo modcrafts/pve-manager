@@ -1,6 +1,7 @@
-const { UserMg, VmMg } = require('./manager')
+const { UserMg, _VmMg } = require('./manager')
 
 module.exports.apply = (ctx) => {
+    const VmMg = new _VmMg(ctx)
     ctx.command('vps/operate <action:string>', '操作服务器')
         //.option('target', '-t <vmid:posint> 指定操作的服务器(不填默认操作已选择服务器)')
         .usage('可用的操作:\nstart - 启动\nshutdown - 关机\nreboot - 重启\nstop - 终止\nreset - 重置')

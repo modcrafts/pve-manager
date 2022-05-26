@@ -1,7 +1,7 @@
 module.exports.name = 'tcloud'
 
 const { Database, User, Tables } = require('koishi-core')
-const { UserMg, VmMg } = require('./manager')
+const { UserMg, _VmMg } = require('./manager')
 const { Time, Logger } = require('koishi-utils')
 var dayjs = require('dayjs')
 var customParseFormat = require('dayjs/plugin/customParseFormat')
@@ -9,8 +9,10 @@ dayjs.extend(customParseFormat)
 
 const VPSoperate = require('./operate')
 const VPSadmin = require('./admin')
+const iKuaiPort = require('./port')
 module.exports.VPSoperate = VPSoperate
 module.exports.VPSadmin = VPSadmin
+module.exports.iKuaiPort = iKuaiPort
 
 Tables.extend('vpsinfo', {
   // 主键名称，将用于 database.get() 等方法
@@ -41,9 +43,11 @@ Database.extend('koishi-plugin-mysql', ({ tables }) => {
 
 
 module.exports.apply = (ctx) => {
+  const VmMg = new _VmMg(ctx)
   ctx.command('vps', 'VPS管理',{ minInterval: 5000 })
   ctx.plugin(VPSoperate)
   ctx.plugin(VPSadmin)
+  ctx.plugin(iKuaiPort)
   ctx.command('vps/server', '列出/选择机器')
     .option('select', '-s <vmid:posint> 选择默认操作的机器')
     .example('/server -s 100 选择 VMID 为 100 的机器作为默认机器')
@@ -113,15 +117,21 @@ module.exports.apply = (ctx) => {
       let [vpsinfo] = await ctx.database.get('vpsinfo', { 'id': vmid })
       if(!vpsinfo?.id) return "机器不存在。"
             const vpstime = vpsinfo.expdate.valueOf()
+      let agent = await _VmMg.request(1,"/nodes/"+node+"/qemu/"+vmid+"/agent/ping")==500
       let b = `机器: ${vmid} (${node})
 ==========
 状态: ${stu[a.status]}\
 ${dayjs(vpstime).isAfter(dayjs().add(5, 'year')) ? "" : "\n到期时间: " + dayjs(vpstime).format('YYYY-MM-DD')}
 运行时间: ${Time.formatTime(Number(String(a.uptime)+'000')) || '节点离线'}
 CPU 使用率: ${(a.cpu*100).toFixed(2)}% (${a.cpus} vCPUs)
-最大内存: ${a.maxmem/1073741824 || 0} GB`
+最大内存: ${a.maxmem/1073741824 || 0} GB
+Guest-Agent: ${ agent ? "未配置或未运行" : "正常"}`
+      
     try {
     session.send(b)
+    if(agent && stu[a.status] !== "已停止") {
+      session.send("您的 Guest Agent 未正常运行, 后续可能无法正常使用网络")
+    }
     } catch(err) {
       return '消息发送失败,账号可能被风控。'
     }

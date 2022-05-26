@@ -4,5 +4,10 @@ module.exports = class Tcloud {
         user: "pvebot@pve",
         password: "P@ssw0rd"
     }
+    static ikuai = {
+        address: "10.0.0.2",
+        user: "bot",
+        password: "SuperSceret"
+    }
     
 }
