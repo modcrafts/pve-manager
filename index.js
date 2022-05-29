@@ -1,8 +1,7 @@
 module.exports.name = 'tcloud'
 
-const { Database, User, Tables } = require('koishi-core')
+const { Database, User, Time, Tables } = require('koishi')
 const { UserMg, _VmMg } = require('./manager')
-const { Time, Logger } = require('koishi-utils')
 var dayjs = require('dayjs')
 var customParseFormat = require('dayjs/plugin/customParseFormat')
 dayjs.extend(customParseFormat)
@@ -14,35 +13,23 @@ module.exports.VPSoperate = VPSoperate
 module.exports.VPSadmin = VPSadmin
 module.exports.iKuaiPort = iKuaiPort
 
-Tables.extend('vpsinfo', {
-  // 主键名称，将用于 database.get() 等方法
-  primary: 'id',
-  // 所有数据值唯一的字段名称构成的列表
-  unique: [],
-  fields: {
-    id: 'int',
-    expdate: 'datetime',
-    price: 'int',
-    owner: 'varchar(500)',
-    helpers: 'json',
-    refer: 'varchar(500)',
-    node: 'string',
-  },
-})
-Database.extend('koishi-plugin-mysql', ({ tables }) => {
-  tables.user.vpsselected = 'int'
-  tables.vpsinfo = {
-    id: 'int',
-    expdate: 'datetime',
-    price: 'int',
-    owner: 'varchar(500)',
-    helpers: 'json',
-    node: 'string',
-  }
-})
-
-
 module.exports.apply = (ctx) => {
+  ctx.model.extend('user', {
+    vpsselected: 'integer',
+  })
+  ctx.model.extend('vpsinfo', {
+    id: 'integer',
+    expdate: 'date',
+    price: 'integer',
+    owner: 'text',
+    helpers: 'json',
+    refer: 'text',
+    node: 'string',
+  }, {
+    // 使用自增的主键值
+    autoInc: false,
+  })
+
   const VmMg = new _VmMg(ctx)
   ctx.command('vps', 'VPS管理',{ minInterval: 5000 })
   ctx.plugin(VPSoperate)
@@ -122,7 +109,7 @@ module.exports.apply = (ctx) => {
 ==========
 状态: ${stu[a.status]}\
 ${dayjs(vpstime).isAfter(dayjs().add(5, 'year')) ? "" : "\n到期时间: " + dayjs(vpstime).format('YYYY-MM-DD')}
-运行时间: ${Time.formatTime(Number(String(a.uptime)+'000')) || '节点离线'}
+运行时间: ${Time.format(Number(String(a.uptime)+'000')) || '节点离线'}
 CPU 使用率: ${(a.cpu*100).toFixed(2)}% (${a.cpus} vCPUs)
 最大内存: ${a.maxmem/1073741824 || 0} GB
 Guest-Agent: ${ agent ? "未配置或未运行" : "正常"}`

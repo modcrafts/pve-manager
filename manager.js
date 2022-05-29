@@ -1,5 +1,4 @@
 const Config = require('./config')
-const { Context } = require('koishi-core')
 const pveajs = require("./pvea")
 const pve = new pveajs(Config.pve.address, Config.pve.user, Config.pve.password)
 
@@ -109,11 +108,11 @@ class _VmMg {
         }*/
         //console.log(vmidlist)
         //console.log(vmidlist[vmid])
-        
+        let datas = []
         for (let [key, name] of Object.entries(vmidlist)) {
-            console.log(key, name)
-            await this.ctx.database.update('vpsinfo', [{ id: parseInt(key) ,node: name}])
+            datas.push({ id: parseInt(key) ,node: name})
         }
+        await this.ctx.database.upsert('vpsinfo', datas)
         if (vmidlist[vmid]) {
             //console.timeEnd('start')
             return vmidlist[vmid]

@@ -1,5 +1,4 @@
-const { Database, User, App } = require('koishi-core')
-const { Time, Logger } = require('koishi-utils')
+const { Database, User, Time, App } = require('koishi')
 const { UserMg, _VmMg } = require('./manager')
 var dayjs = require('dayjs')
 var customParseFormat = require('dayjs/plugin/customParseFormat')
@@ -82,7 +81,7 @@ module.exports.apply = (ctx) => {
             if(options.node){vpsinfo.node = options.node}
             //await session.send(JSON.stringify(rows))
             //let id = vmid
-            await ctx.database.update('vpsinfo', [vpsinfo])
+            await ctx.database.upsert('vpsinfo', [vpsinfo])
             return "操作已进行"
         })
     ctx.command('vmid/renew <vmid:posint> <time>','续期 VPS')
@@ -115,7 +114,7 @@ module.exports.apply = (ctx) => {
                 return '不能指定过去的时间为续期/到期时间。'
             }
 
-            await ctx.database.update('vpsinfo',[{id: vmid, expdate: Time.parseDate(timestamp)}])
+            await ctx.database.upsert('vpsinfo',[{id: vmid, expdate: Time.parseDate(timestamp)}])
             return '已将 VPS '+vmid+' 延期至 '+ dayjs(timestamp).format('YYYY-MM-DD')
         })
         ctx.command('admin/pve','PVE 操作', { authority: 5 })
